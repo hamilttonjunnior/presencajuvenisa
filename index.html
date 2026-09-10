@@ -479,7 +479,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Credenciais do Firebase (Atualizado para presencajuvenisa)
+    // Credenciais do Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyCxjoTsfTy25CiLUxmJm1BHAdaPwPjgSk",
         authDomain: "presencajuvenisa.firebaseapp.com",
@@ -498,23 +498,6 @@
     let currentCalDate = new Date();
     let currentActiveEvent = null;
 
-    const initialAthletes = [
-        { number: "", name: "Carolina Coutada Rodrigues", birthdate: "" },
-        { number: "", name: "Ana Carolina da Silva Veríssimo", birthdate: "" },
-        { number: "", name: "Maria Luísa Meneses Baptista", birthdate: "" },
-        { number: "", name: "Matilde Bastos Rocha", birthdate: "" },
-        { number: "", name: "Francisca Gaião Miranda da Silva", birthdate: "" },
-        { number: "", name: "Nádia dos Santos Silva", birthdate: "" },
-        { number: "", name: "Carolina Braga da Silva Cardoso Arantes", birthdate: "" },
-        { number: "", name: "Matilde Luís Campos Loureiro", birthdate: "" },
-        { number: "", name: "Carla Rodríguez Miranda", birthdate: "" },
-        { number: "", name: "Matilde Sofia Costa Silva", birthdate: "" },
-        { number: "", name: "Diana Rafaela da Silva Dantas", birthdate: "" },
-        { number: "", name: "Iara e Castro Barreiro Pereira", birthdate: "" },
-        { number: "", name: "Maria Faria Silva", birthdate: "" },
-        { number: "", name: "Melanie Ribeiro Martins" }
-    ];
-
     window.addEventListener('DOMContentLoaded', async () => {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('data-chamada').value = today;
@@ -532,27 +515,22 @@
         const q = query(collection(db, "athletes"), orderBy("name"));
         const querySnapshot = await getDocs(q);
         
-        if (querySnapshot.empty) {
-            document.getElementById('loading').innerText = "Criando lista inicial de atletas...";
-            for (let item of initialAthletes) {
-                const newDocRef = doc(collection(db, "athletes"));
-                await setDoc(newDocRef, { number: item.number, name: item.name, birthdate: "" });
-            }
-            const retrySnapshot = await getDocs(q);
-            retrySnapshot.forEach((doc) => {
-                athletesList.push({ id: doc.id, ...doc.data() });
-            });
-        } else {
-            querySnapshot.forEach((doc) => {
-                athletesList.push({ id: doc.id, ...doc.data() });
-            });
-        }
+        querySnapshot.forEach((doc) => {
+            athletesList.push({ id: doc.id, ...doc.data() });
+        });
+
         renderAthletesTable();
     }
 
     function renderAthletesTable() {
         const tbody = document.getElementById('tbody-athletes');
         tbody.innerHTML = "";
+        
+        if (athletesList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Nenhuma atleta cadastrada.</td></tr>`;
+            return;
+        }
+
         athletesList.forEach(athlete => {
             let birthStr = "-";
             if (athlete.birthdate) {
