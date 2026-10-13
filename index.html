@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>Lista de Presença: FCA - Juvenis A</title>
+    <title>Lista de Presença: FCA - Juvenis B</title>
     
-    <meta property="og:title" content="Lista de Presença: FCA - Juvenis A">
+    <meta property="og:title" content="Lista de Presença: FCA - Juvenis B">
     <meta property="og:description" content="Calendário dinâmico e gestão de presenças da época 2026/2027.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://hamilttonjunnior.github.io/presencajuvenisa/">
@@ -74,7 +74,7 @@
         .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border-radius: 6px; border: 1px solid var(--border); }
 
         table { width: 100%; border-collapse: collapse; text-align: left; min-width: 600px; }
-        #table-relatorio { min-width: 850px; }
+        #table-relatorio { min-width: 900px; }
 
         th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: top; }
         th { background-color: #f1f5f9; color: var(--primary); font-weight: 600; white-space: nowrap; }
@@ -150,7 +150,7 @@
         
         .modal-footer { padding: 15px 20px; background: #f8fafc; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
-        /* Área de impressão oculta por padrão, usada para gerar o PDF perfeitamente */
+        /* Área dedicada para impressão limpa em PDF (Oculta no site normal) */
         #print-area { display: none; }
 
         @media print {
@@ -199,7 +199,7 @@
             <div class="club-logo">
                 <img src="logo.png" alt="Logo FCA">
             </div>
-            <h1>Lista de Presença: FCA - Juvenis A</h1>
+            <h1>Lista de Presença: FCA - Juvenis B</h1>
         </div>
         <div id="loading" style="font-weight: bold; color: var(--warning);">Conectando ao banco...</div>
     </header>
@@ -215,7 +215,6 @@
         <div class="form-group">
             <label for="data-chamada"><b>Data do Treino:</b></label>
             <input type="date" id="data-chamada" onchange="loadAttendanceDay()">
-            <span style="font-size: 12px; color: #64748b;">(Ter: 19h30 | Qua: 20h30 | Sex: 20h00)</span>
         </div>
         <div class="table-responsive">
             <table id="table-chamada">
@@ -308,26 +307,44 @@
         </div>
     </div>
 
+    <!-- ABA GERENCIAR ATLETAS COM O CAMPO DE LICENÇA FPV DESTACADO -->
     <div id="tab-atletas" class="tab-content">
-        <div class="form-group" style="gap: 8px;">
+        <div class="form-group" style="background: #f1f5f9; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
             <input type="hidden" id="edit-athlete-id">
-            <input type="number" id="athlete-number" placeholder="Nº" style="width: 70px;">
-            <input type="text" id="athlete-name" placeholder="Nome Completo da Atleta" style="flex: 2; min-width: 180px;">
-            <input type="text" id="athlete-license" placeholder="Nº Licença FPV" style="width: 130px;">
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <label for="athlete-birthdate" style="font-size: 12px; font-weight: bold; color: var(--primary);">Nasc.:</label>
+            
+            <div style="display: flex; flex-direction: column; gap: 4px; width: 80px;">
+                <label style="font-size: 11px; font-weight: bold; color: #64748b;">Nº Camisa:</label>
+                <input type="number" id="athlete-number" placeholder="Nº">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px; flex: 2; min-width: 200px;">
+                <label style="font-size: 11px; font-weight: bold; color: #64748b;">Nome da Atleta:</label>
+                <input type="text" id="athlete-name" placeholder="Nome Completo da Atleta">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px; width: 160px;">
+                <label style="font-size: 11px; font-weight: bold; color: var(--primary);">Nº Licença FPV:</label>
+                <input type="text" id="athlete-license" placeholder="Ex: 123456" style="background: #fff; font-weight: bold; color: var(--info);">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px; width: 150px;">
+                <label style="font-size: 11px; font-weight: bold; color: #64748b;">Aniversário:</label>
                 <input type="date" id="athlete-birthdate">
             </div>
-            <button class="btn" id="btn-save-athlete" onclick="saveAthlete()">Adicionar Atleta</button>
-            <button class="btn btn-delete" id="btn-cancel-edit" style="display:none;" onclick="cancelAthleteEdit()">Cancelar</button>
+
+            <div style="display: flex; align-items: flex-end; gap: 5px; margin-top: auto;">
+                <button class="btn" id="btn-save-athlete" onclick="saveAthlete()" style="height: 42px;">Adicionar Atleta</button>
+                <button class="btn btn-delete" id="btn-cancel-edit" style="display:none; height: 42px;" onclick="cancelAthleteEdit()">Cancelar</button>
+            </div>
         </div>
+
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
                         <th style="width: 8%;">Nº</th>
-                        <th style="width: 40%;">Nome Completo</th>
-                        <th style="width: 17%;">Nº Licença FPV</th>
+                        <th style="width: 37%;">Nome Completo</th>
+                        <th style="width: 20%;">Nº Licença FPV</th>
                         <th style="width: 15%;">Aniversário</th>
                         <th style="width: 20%;">Ações</th>
                     </tr>
@@ -362,13 +379,13 @@
                 <thead>
                     <tr>
                         <th style="width: 5%;">Nº</th>
-                        <th style="width: 20%;">Nome da Atleta</th>
+                        <th style="width: 24%;">Nome da Atleta</th>
                         <th style="width: 12%;">Licença FPV</th>
-                        <th style="width: 8%;">P</th>
-                        <th style="width: 8%;">F</th>
-                        <th style="width: 8%;">J</th>
-                        <th style="width: 10%;">%</th>
-                        <th style="width: 29%;">Histórico de Faltas</th>
+                        <th style="width: 6%;">P</th>
+                        <th style="width: 6%;">F</th>
+                        <th style="width: 6%;">J</th>
+                        <th style="width: 8%;">%</th>
+                        <th style="width: 33%;">Histórico de Faltas</th>
                     </tr>
                 </thead>
                 <tbody id="tbody-relatorio"></tbody>
@@ -592,7 +609,7 @@
         document.getElementById('edit-athlete-id').value = id;
         document.getElementById('athlete-name').value = name;
         document.getElementById('athlete-number').value = number;
-        document.getElementById('athlete-license').value = license;
+        document.getElementById('athlete-license').value = license || "";
         document.getElementById('athlete-birthdate').value = birthdate;
         document.getElementById('btn-save-athlete').innerText = "Salvar";
         document.getElementById('btn-cancel-edit').style.display = "inline-block";
@@ -1191,7 +1208,7 @@
             tr.innerHTML = `
                 <td><b>${data.number || '-'}</b></td>
                 <td>${data.name}</td>
-                <td><span style="font-family: monospace;">${data.license}</span></td>
+                <td><span style="font-family: monospace; color: var(--info); font-weight: bold;">${data.license}</span></td>
                 <td><span class="badge badge-p">${data.p}</span></td>
                 <td><span class="badge badge-f">${data.f}</span></td>
                 <td><span class="badge badge-j">${data.j}</span></td>
@@ -1202,7 +1219,6 @@
         });
     };
 
-    // --- IMPRESSÃO OTIMIZADA PARA TELEMÓVEL (GERAR PDF) ---
     window.printReportOnly = function() {
         const reportTitle = document.getElementById('report-header').innerText;
         const reportTableHTML = document.getElementById('table-relatorio').outerHTML;
