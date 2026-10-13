@@ -762,4 +762,470 @@
         document.getElementById('edit-event-id').value = ev.id;
         document.getElementById('edit-title').value = ev.title;
         document.getElementById('edit-date').value = ev.date;
-        document.getElementById('edit-date-end').value =
+        document.getElementById('edit-date-end').value = ev.endDate || ev.date;
+        document.getElementById('edit-time').value = ev.time || "";
+        document.getElementById('edit-time-end').value = ev.endTime || "";
+        document.getElementById('edit-location').value = ev.location || "";
+        document.getElementById('edit-category-select').value = ev.category;
+        document.getElementById('edit-desc').value = ev.description || "";
+
+        toggleEditEventMode(false);
+        document.getElementById('event-modal').classList.add('active');
+    };
+
+    window.closeEventModal = function() {
+        document.getElementById('event-modal').classList.remove('active');
+        currentActiveEvent = null;
+    };
+
+    window.toggleEditEventMode = function(isEdit) {
+        if (isEdit) {
+            document.getElementById('modal-view-mode').style.display = "none";
+            document.getElementById('modal-edit-mode').style.display = "flex";
+            document.getElementById('footer-view-buttons').style.display = "none";
+            document.getElementById('footer-edit-buttons').style.display = "flex";
+            document.getElementById('modal-title').innerText = "Editar Evento";
+        } else {
+            document.getElementById('modal-view-mode').style.display = "flex";
+            document.getElementById('modal-edit-mode').style.display = "none";
+            document.getElementById('footer-view-buttons').style.display = "flex";
+            document.getElementById('footer-edit-buttons').style.display = "none";
+            document.getElementById('modal-title').innerText = "Detalhe do Evento";
+        }
+    };
+
+    window.saveEditedEvent = async function() {
+        const id = document.getElementById('edit-event-id').value;
+        const title = document.getElementById('edit-title').value.trim();
+        const date = document.getElementById('edit-date').value;
+        const dateEnd = document.getElementById('edit-date-end').value;
+        const time = document.getElementById('edit-time').value;
+        const timeEnd = document.getElementById('edit-time-end').value;
+        const location = document.getElementById('edit-location').value.trim();
+        const category = document.getElementById('edit-category-select').value;
+        const description = document.getElementById('edit-desc').value.trim();
+
+        if (!title || !date) return alert("O título e a data de início são obrigatórios.");
+
+        document.getElementById('loading').style.display = "block";
+        
+        await setDoc(doc(db, "events", id), {
+            title,
+            date,
+            endDate: dateEnd ? dateEnd : date,
+            time,
+            endTime: timeEnd ? timeEnd : "",
+            location,
+            category,
+            description
+        });
+
+        closeEventModal();
+        await loadEvents();
+        document.getElementById('loading').style.display = "none";
+    };
+
+    window.triggerDeleteFromModal = async function() {
+        if (!currentActiveEvent) return;
+        if (confirm(`Deseja mesmo excluir o evento "${currentActiveEvent.title}"?`)) {
+            document.getElementById('loading').style.display = "block";
+            await deleteDoc(doc(db, "events", currentActiveEvent.id));
+            closeEventModal();
+            await loadEvents();
+            document.getElementById('loading').style.display = "none";
+        }
+    };
+
+    function formatDateLocale(dateStr) {
+        if (!dateStr) return "-";
+        const parts = dateStr.split("-");
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    window.changeMonth = function(direction) {
+        currentCalDate.setMonth(currentCalDate.getMonth() + direction);
+        renderCalendar();
+    }
+
+    function isDateInInterval(targetDateStr, startDateStr, endDateStr) {
+        const target = new Date(targetDateStr + "T00:00:00");
+        const start = new Date(startDateStr + "T00:00:00");
+        const end = new Date(endDateStr + "T00:00:00");
+        return target >= start && target <= end;
+    }
+
+    function renderCalendar() {
+        const gridHeader = document.getElementById('calendar-grid-header');
+        const gridDays = document.getElementById('calendar-grid-days');
+        const monthYearLabel = document.getElementById('calendar-month-year');
+
+        const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+        gridHeader.innerHTML = weekDays.map(d => `<div class="calendar-header-day">${d}</div>`).join('');
+
+        const year = currentCalDate.getFullYear();
+        const month = currentCalDate.getMonth();
+
+        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        monthYearLabel.innerText = `${monthNames[month]} de ${year}`;
+
+        const firstDayIdx = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        gridDays.innerHTML = "";
+
+        for (let i = 0; i < firstDayIdx; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = "calendar-day empty";
+            gridDays.appendChild(emptyCell);
+        }
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dayCell = document.createElement('div');
+            const thisDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            dayCell.className = "calendar-day" + (thisDateStr === todayStr ? " today" : "");
+
+            const numSpan = document.createElement('span');
+            numSpan.className = "day-num";
+            numSpan.innerText = day;
+            dayCell.appendChild(numSpan);
+
+            const eventsContainer = document.createElement('div');
+            eventsContainer.className = "day-events";
+
+            athletesList.forEach(athlete => {
+                if (athlete.birthdate) {
+                    const [aY, aM, aD] = athlete.birthdate.split("-");
+                    if (parseInt(aM) === (month + 1) && parseInt(aD) === day) {
+                        const div = document.createElement('div');
+                        div.className = "event-item-micro badge-niver";
+                        div.title = `🎂 Aniversário: ${athlete.name}`;
+                        div.innerText = `🎂 ${athlete.name.split(' ')[0]}`;
+                        eventsContainer.appendChild(div);
+                    }
+                }
+            });
+
+            eventsList.forEach(ev => {
+                const start = ev.date;
+                const end = ev.endDate ? ev.endDate : ev.date;
+                
+                if (isDateInInterval(thisDateStr, start, end)) {
+                    const div = document.createElement('div');
+                    div.className = `event-item-micro badge-${ev.category}`;
+                    div.style.cursor = "pointer";
+                    
+                    let horaStr = "";
+                    if (ev.time) {
+                        horaStr = ev.time;
+                        if (ev.endTime) {
+                            horaStr += `-${ev.endTime}`;
+                        }
+                        horaStr += " ";
+                    }
+
+                    const local = ev.location ? ` @ ${ev.location}` : "";
+                    const dRangeText = (start !== end) ? ` (${start.split('-')[2]}/${start.split('-')[1]} a ${end.split('-')[2]}/${end.split('-')[1]})` : "";
+                    
+                    div.title = `${ev.title}${dRangeText} (${horaStr}${local}) - Ver Detalhes`;
+                    div.innerText = `${horaStr}${ev.title}`;
+                    
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        openEventDetails(ev.id);
+                    };
+
+                    eventsContainer.appendChild(div);
+                }
+            });
+
+            dayCell.appendChild(eventsContainer);
+            gridDays.appendChild(dayCell);
+        }
+
+        renderNotifications();
+    }
+
+    function renderNotifications() {
+        const niverPanel = document.getElementById('niver-panel');
+        const niverList = document.getElementById('niver-list');
+        niverList.innerHTML = "";
+
+        const notifications = [];
+        const now = new Date();
+        const timeLimit = 10 * 24 * 60 * 60 * 1000;
+
+        athletesList.forEach(athlete => {
+            if (athlete.birthdate) {
+                const [aY, aM, aD] = athlete.birthdate.split("-");
+                const targetDate = new Date(now.getFullYear(), parseInt(aM) - 1, parseInt(aD));
+                
+                if (targetDate.getTime() - now.getTime() < -86400000) {
+                    targetDate.setFullYear(now.getFullYear() + 1);
+                }
+
+                const diffTime = targetDate.getTime() - now.getTime();
+                if (diffTime >= -86400000 && diffTime <= timeLimit) {
+                    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    notifications.push({
+                        type: "🎂 Aniversário",
+                        title: `${athlete.name} (${daysLeft === 0 ? "Hoje!" : "em " + daysLeft + " dias" })`,
+                        date: targetDate,
+                        style: "color: #db2777; font-weight: bold;"
+                    });
+                }
+            }
+        });
+
+        eventsList.forEach(ev => {
+            const evDate = new Date(ev.date + "T00:00:00");
+            const evEndDate = new Date((ev.endDate || ev.date) + "T00:00:00");
+            const diffTime = evDate.getTime() - now.getTime();
+            
+            if ((diffTime >= -86400000 && diffTime <= timeLimit) || (now >= evDate && now <= evEndDate)) {
+                const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                let label = "🏆 Jogo/Torneio";
+                let style = "color: var(--danger); font-weight: bold;";
+                if (ev.category === "treino") {
+                    label = "🏐 Treino Regular";
+                    style = "color: var(--primary); font-weight: bold;";
+                } else if (ev.category === "treino-extra") {
+                    label = "🏐 Treino Extra";
+                    style = "color: var(--info); font-weight: bold;";
+                } else if (ev.category === "extra") {
+                    label = "🌟 Evento Extra";
+                    style = "color: var(--purple); font-weight: bold;";
+                }
+
+                let statusText = "";
+                if (now >= evDate && now <= evEndDate) {
+                    statusText = "A Decorrer!";
+                } else {
+                    statusText = daysLeft === 0 ? "Hoje!" : `em ${daysLeft} dias`;
+                }
+
+                const rangeStr = ev.endDate && ev.endDate !== ev.date ? ` (de ${ev.date.split('-')[2]}/${ev.date.split('-')[1]} a ${ev.endDate.split('-')[2]}/${ev.endDate.split('-')[1]})` : "";
+                
+                let timeStr = "";
+                if (ev.time) {
+                    timeStr = ` às ${ev.time}`;
+                    if (ev.endTime) {
+                        timeStr += `-${ev.endTime}`;
+                    }
+                }
+
+                notifications.push({
+                    type: label,
+                    title: `${ev.title}${rangeStr}${timeStr} (${statusText})${ev.location ? ' - Local: ' + ev.location : ''}`,
+                    date: evDate,
+                    style: style
+                });
+            }
+        });
+
+        notifications.sort((a, b) => a.date - b.date);
+
+        if (notifications.length > 0) {
+            niverPanel.style.display = "block";
+            notifications.forEach(notif => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span style="${notif.style}">[${notif.type}]</span> ${notif.title}`;
+                niverList.appendChild(li);
+            });
+        } else {
+            niverPanel.style.display = "none";
+        }
+    }
+
+    async function populateFilterOptions(keepSelection = false) {
+        const select = document.getElementById('filter-month');
+        const currentValue = select.value;
+
+        const querySnapshot = await getDocs(collection(db, "attendance"));
+        const availableMonths = new Set();
+
+        querySnapshot.forEach(docSnap => {
+            const dateKey = docSnap.id;
+            const parts = dateKey.split("-");
+            if (parts.length === 3) {
+                const yearMonth = `${parts[1]}/${parts[0]}`;
+                availableMonths.add(yearMonth);
+            }
+        });
+
+        const sortedMonths = Array.from(availableMonths).sort((a, b) => {
+            const [mA, yA] = a.split("/");
+            const [mB, yB] = b.split("/");
+            return new Date(yA, mA - 1) - new Date(yB, mB - 1);
+        });
+
+        select.innerHTML = '<option value="ALL">Todo o Histórico Completo</option>';
+        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+        sortedMonths.forEach(ym => {
+            const [m, y] = ym.split("/");
+            const name = `${monthNames[parseInt(m) - 1]} / ${y}`;
+            const option = document.createElement('option');
+            option.value = ym;
+            option.innerText = name;
+            select.appendChild(option);
+        });
+
+        if (keepSelection && currentValue) {
+            select.value = currentValue;
+        } else {
+            const now = new Date();
+            const currentYM = `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+            if (availableMonths.has(currentYM)) {
+                select.value = currentYM;
+            } else if (sortedMonths.length > 0) {
+                select.value = sortedMonths[sortedMonths.length - 1];
+            }
+        }
+
+        await generateReport();
+    }
+
+    window.generateReport = async function() {
+        const filter = document.getElementById('filter-month').value;
+        const searchQuery = (document.getElementById('search-athlete-name').value || "").toLowerCase().trim();
+        const sortType = document.getElementById('sort-relatorio').value;
+        const reportHeader = document.getElementById('report-header');
+        
+        if (filter === "ALL") {
+            reportHeader.innerText = "Relatório Consolidado Geral (Histórico Completo)";
+        } else {
+            const [fMonth, fYear] = filter.split("/");
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            reportHeader.innerText = `Relatório de Presenças - Mês de: ${monthNames[parseInt(fMonth) - 1]} de ${fYear}`;
+        }
+
+        const querySnapshot = await getDocs(collection(db, "attendance"));
+        
+        const stats = {};
+        athletesList.forEach(a => {
+            stats[a.id] = { id: a.id, p: 0, f: 0, j: 0, total: 0, name: a.name, number: a.number, license: a.license || '-', absences: [] };
+        });
+
+        const sortedDocs = [];
+        querySnapshot.forEach(docSnap => {
+            sortedDocs.push({ id: docSnap.id, data: docSnap.data() });
+        });
+        
+        sortedDocs.sort((a, b) => a.id.localeCompare(b.id));
+
+        sortedDocs.forEach(docObj => {
+            const dateKey = docObj.id; 
+            const parts = dateKey.split("-");
+            const monthOfDoc = parts[1];
+            const yearOfDoc = parts[0];
+            const currentDocYM = `${monthOfDoc}/${yearOfDoc}`;
+            const formattedDate = `${parts[2]}/${parts[1]}`; 
+
+            if (filter === "ALL" || filter === currentDocYM) {
+                const dayRecords = docObj.data.records || {};
+                
+                Object.keys(dayRecords).forEach(athleteId => {
+                    if (stats[athleteId]) {
+                        const status = dayRecords[athleteId].status;
+                        stats[athleteId].total++;
+                        
+                        if (status === 'P') {
+                            stats[athleteId].p++;
+                        } else if (status === 'F') {
+                            stats[athleteId].f++;
+                            stats[athleteId].absences.push({ date: formattedDate, type: 'Falta', note: '' });
+                        } else if (status === 'J') {
+                            stats[athleteId].j++;
+                            const justif = dayRecords[athleteId].justification || "Sem motivo informado";
+                            stats[athleteId].absences.push({ date: formattedDate, type: 'Justificada', note: justif });
+                        }
+                    }
+                });
+            }
+        });
+
+        const tbody = document.getElementById('tbody-relatorio');
+        tbody.innerHTML = "";
+
+        let reportData = Object.values(stats);
+
+        if (searchQuery) {
+            reportData = reportData.filter(item => item.name.toLowerCase().includes(searchQuery));
+        }
+
+        reportData.sort((a, b) => {
+            if (sortType === 'faltas') {
+                const totalFaltasA = a.f + a.j;
+                const totalFaltasB = b.f + b.j;
+                if (totalFaltasB !== totalFaltasA) {
+                    return totalFaltasB - totalFaltasA;
+                }
+            } else if (sortType === 'presencas') {
+                if (b.p !== a.p) {
+                    return b.p - a.p;
+                }
+            }
+            return a.name.localeCompare(b.name);
+        });
+
+        reportData.forEach(data => {
+            const pct = data.total > 0 ? ((data.p / data.total) * 100).toFixed(1) : "0.0";
+            
+            let historyHTML = `<span style="color:#64748b; font-style:italic;">Nenhuma falta</span>`;
+            if (data.absences.length > 0) {
+                historyHTML = `<ul class="absence-history-list">`;
+                data.absences.forEach(abs => {
+                    if (abs.type === 'Justificada') {
+                        historyHTML += `<li><span class="badge badge-j">J</span> <span class="absence-date">${abs.date}</span>: <span class="absence-note">"${abs.note}"</span></li>`;
+                    } else {
+                        historyHTML += `<li><span class="badge badge-f">F</span> <span class="absence-date">${abs.date}</span>: <span class="absence-note" style="color:var(--danger)">Sem Justificativa</span></li>`;
+                    }
+                });
+                historyHTML += `</ul>`;
+            }
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><b>${data.number || '-'}</b></td>
+                <td>${data.name}</td>
+                <td><span style="font-family: monospace;">${data.license}</span></td>
+                <td><span class="badge badge-p">${data.p}</span></td>
+                <td><span class="badge badge-f">${data.f}</span></td>
+                <td><span class="badge badge-j">${data.j}</span></td>
+                <td><b>${pct}%</b></td>
+                <td>${historyHTML}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
+
+    // --- IMPRESSÃO OTIMIZADA PARA TELEMÓVEL (GERAR PDF) ---
+    window.printReportOnly = function() {
+        const reportTitle = document.getElementById('report-header').innerText;
+        const reportTableHTML = document.getElementById('table-relatorio').outerHTML;
+        
+        document.getElementById('print-modal-title').innerText = reportTitle;
+        document.getElementById('print-modal-content').innerHTML = reportTableHTML;
+
+        window.print();
+    };
+
+    window.switchTab = function(tabName) {
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+
+        document.getElementById(`btn-tab-${tabName}`).classList.add('active');
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+
+        if(tabName === 'relatorio') {
+            populateFilterOptions();
+        } else if (tabName === 'calendar') {
+            renderCalendar();
+        }
+    };
+</script>
+</body>
+</html>
